@@ -8,3 +8,4 @@ langchain
 duckduckgo-search
 sketch
 docx2txt
+huggingface_hub
