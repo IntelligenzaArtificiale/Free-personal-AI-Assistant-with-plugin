@@ -37,10 +37,6 @@ if 'hf_token' in st.session_state:
         huggingfacehub_api_token=st.session_state['hf_token'],
     ) # type: ignore
 
-st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
-st.markdown('<style>.css-1udrt0m{\
-            width: 100%;}</style>', unsafe_allow_html=True)
-
 
 
 # Generate empty lists for generated and past.
