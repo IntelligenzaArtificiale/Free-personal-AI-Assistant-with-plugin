@@ -1,4 +1,6 @@
 import streamlit as st
+st.markdown('<style>.css-1udrt0m{\
+            width: 100%;}</style>', unsafe_allow_html=True)
 from streamlit_chat import message
 from streamlit_extras.colored_header import colored_header
 from streamlit_extras.add_vertical_space import add_vertical_space
