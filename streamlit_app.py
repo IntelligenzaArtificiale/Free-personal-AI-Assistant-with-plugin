@@ -37,6 +37,8 @@ if 'hf_token' in st.session_state:
 
 st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
 st.markdown('<style>.css-w770g5{\
+            width: 100%;}\
+            .css-b3z5c9{    \
             width: 100%;}</style>', unsafe_allow_html=True)
 
 
