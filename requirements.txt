@@ -1,0 +1,8 @@
+streamlit
+hugchat
+streamlit-chat
+streamlit-extras
+pdfplumber
+pandas
+langchain
+duckduckgo-search
