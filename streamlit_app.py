@@ -1,6 +1,4 @@
 import streamlit as st
-st.markdown('<style>.css-1udrt0m{\
-            width: 100%;}</style>', unsafe_allow_html=True)
 from streamlit_chat import message
 from streamlit_extras.colored_header import colored_header
 from streamlit_extras.add_vertical_space import add_vertical_space
@@ -36,6 +34,10 @@ if 'hf_token' in st.session_state:
         task="feature-extraction",
         huggingfacehub_api_token=st.session_state['hf_token'],
     ) # type: ignore
+
+st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
+st.markdown('<style>.css-w770g5{\
+            width: 100%;}</style>', unsafe_allow_html=True)
 
 
 
