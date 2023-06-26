@@ -398,4 +398,7 @@ with response_container:
             st.markdown('<br><hr><br>', unsafe_allow_html=True)
             export_chat()
             
-
+    else:
+        st.info("👋 Hey , we are very happy to see you here 🤗")
+        st.info("👉 Please Login to continue, click on top left corner to login 🚀")
+        st.error("👉 If you are not registered on Hugging Face, please register first and then login 🤗")
