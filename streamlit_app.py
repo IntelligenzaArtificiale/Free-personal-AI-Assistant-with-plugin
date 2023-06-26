@@ -43,13 +43,7 @@ st.markdown('<style>.css-w770g5{\
 
 
 
-# Generate empty lists for generated and past.
-## generated stores AI generated responses
-if 'generated' not in st.session_state:
-    st.session_state['generated'] = ["I'm IA ITALIA chat, How may I help you?"]
-## past stores User's questions
-if 'past' not in st.session_state:
-    st.session_state['past'] = ['Hi!']
+
 
 
 # Sidebar contents
@@ -77,6 +71,13 @@ with st.sidebar:
                     id = st.session_state['chatbot'].new_conversation()
                     st.session_state['chatbot'].change_conversation(id)
                     st.session_state['conversation'] = id
+                    # Generate empty lists for generated and past.
+                    ## generated stores AI generated responses
+                    if 'generated' not in st.session_state:
+                        st.session_state['generated'] = ["I'm IA ITALIA chat, How may I help you?"]
+                    ## past stores User's questions
+                    if 'past' not in st.session_state:
+                        st.session_state['past'] = ['Hi!']
                     st.session_state['LLM'] =  HuggingChat(email=st.session_state['hf_email'], psw=st.session_state['hf_pass'])
                     st.experimental_rerun()
     else:
