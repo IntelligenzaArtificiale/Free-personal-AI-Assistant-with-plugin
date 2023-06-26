@@ -390,7 +390,7 @@ with response_container:
     
 
     #print message in reverse order frist message always bot
-    if 'generated' not in st.session_state:
+    if 'generated' in st.session_state:
         if st.session_state['generated']:
             for i in range(len(st.session_state['generated'])-1, -1, -1):
                 message(st.session_state["generated"][i], key=str(i+100))
