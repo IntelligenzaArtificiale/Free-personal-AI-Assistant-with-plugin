@@ -384,9 +384,9 @@ def generate_response(prompt):
 
 ## Conditional display of AI generated responses as a function of user provided prompts
 with response_container:
-    if submitted and user_input and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
-        response = generate_response(user_input)
-        st.session_state.past.append(user_input)
+    if submitted and input_text and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
+        response = generate_response(input_text)
+        st.session_state.past.append(input_text)
         st.session_state.generated.append(response)
     
 
