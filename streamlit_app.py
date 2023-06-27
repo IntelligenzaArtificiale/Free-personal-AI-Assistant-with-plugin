@@ -117,7 +117,7 @@ with st.sidebar:
             max_new_tokens = st.slider('📝 Max New Tokens', min_value=1, max_value=1024, value=1024, step=1)
     
         #plugins for conversation
-        plugins = ["🛑 No PLUGIN","🌐 Web Search", "🔗 Talk with Website" , "📋 Talk with your DATA", "📝 Talk with your DOCUMENTS", "🎧 Talk with your AUDIO", "🎥 Talk with YT video", "💾 Upload saved VectorStore"]
+        plugins = ["🛑 No PLUGIN","🌐 Web Search", "🔗 Talk with Website" , "📋 Talk with your DATA", "📝 Talk with your DOCUMENTS", "🎧 Talk with your AUDIO", "🎥 Talk with YT video", "🧠 GOD MODE" ,"💾 Upload saved VectorStore"]
         if 'plugin' not in st.session_state:
             st.session_state['plugin'] = st.selectbox('🔌 Plugins', plugins, index=0)
         else:
@@ -170,6 +170,158 @@ with st.sidebar:
                     del st.session_state['plugin']
                     st.experimental_rerun()
 
+# GOD MODE PLUGIN
+        if st.session_state['plugin'] == "🧠 GOD MODE" and 'god_mode' not in st.session_state:
+            # the goal of this plugin is to allow the user to use the full power of the model
+            # to make this the user giv us a keyword topic and we using internet, yt videos and website biuld a vectorstore based on the topic
+            with st.expander("🧠 GOD MODE Settings", expanded=True):
+                if 'god_mode' not in st.session_state or st.session_state['god_mode'] == False:
+                    topic = st.text_input('🔎 Topic', "Artificial Intelligence in Finance")
+                    web_result = st.checkbox('🌐 Web Search', value=True, disabled=True)
+                    yt_result = st.checkbox('🎥 YT Search', value=True, disabled=True)
+                    website_result = st.checkbox('🔗 Website Search', value=True, disabled=True)
+                    deep_of_search = st.slider('📊 Deep of Search', min_value=1, max_value=5, value=2, step=1) 
+                    if st.button('🧠✅ Give knowledge to the model'):
+                        full_text = []
+                        links = []
+                        news = []
+                        yt_ids = []
+                        source = []
+                        if web_result == True:
+                            internet_result = ""
+                            internet_answer = ""
+                            with DDGS() as ddgs:
+                                with st.spinner('🌐 Searching on the web...'):
+                                    ddgs_gen = ddgs.text(topic, region="us-en")
+                                    for r in islice(ddgs_gen, deep_of_search):
+                                        l = r['href']
+                                        source.append(l)
+                                        links.append(l)
+                                        internet_result += str(r) + "\n\n"
+                                        
+                                    fast_answer = ddgs.news(topic)
+                                    for r in islice(fast_answer, deep_of_search):
+                                        internet_answer += str(r) + "\n\n" 
+                                        l = r['url']
+                                        source.append(l)
+                                        news.append(r)
+
+                                
+                            full_text.append(internet_result)
+                            full_text.append(internet_answer)
+
+                        if yt_result == True:
+                            with st.spinner('🎥 Searching on YT...'):
+                                from youtubesearchpython import VideosSearch
+                                videosSearch = VideosSearch(topic, limit = deep_of_search)
+                                yt_result = videosSearch.result()
+                                for i in yt_result['result']: # type: ignore
+                                    duration = i['duration'] # type: ignore
+                                    duration = duration.split(':')
+                                    if len(duration) == 3:
+                                        #skip videos longer than 1 hour
+                                        if int(duration[0]) > 1:
+                                            continue
+                                    if len(duration) == 2:
+                                        #skip videos longer than 30 minutes
+                                        if int(duration[0]) > 30:
+                                            continue
+                                    yt_ids.append(i['id']) # type: ignore
+                                    source.append("https://www.youtube.com/watch?v="+i['id']) # type: ignore
+                                    full_text.append(i['title']) # type: ignore
+
+
+                        if website_result == True:
+                            for l in links:
+                                try:
+                                    with st.spinner(f'👨‍💻 Scraping website : {l}'):
+                                        r = requests.get(l)
+                                        soup = BeautifulSoup(r.content, 'html.parser')
+                                        full_text.append(soup.get_text()+"\n\n")
+                                except:
+                                    pass
+
+                        for id in yt_ids:
+                            try:
+                                yt_video_txt= []
+                                with st.spinner(f'👨‍💻 Scraping YT video : {id}'):
+                                    transcript_list = YouTubeTranscriptApi.list_transcripts(id)
+                                    transcript_en = None
+                                    last_language = ""
+                                    for transcript in transcript_list:
+                                        if transcript.language_code == 'en':
+                                            transcript_en = transcript
+                                            break
+                                        else:
+                                            last_language = transcript.language_code
+                                    if transcript_en is None:   
+                                        transcript_en = transcript_list.find_transcript([last_language])
+                                        transcript_en = transcript_en.translate('en')
+
+                                    text = transcript_en.fetch()
+                                    yt_video_txt.append(text)
+
+                                    for i in range(len(yt_video_txt)):
+                                        for j in range(len(yt_video_txt[i])):
+                                            full_text.append(yt_video_txt[i][j]['text'])
+
+
+                            except:
+                                pass
+
+                        with st.spinner('🧠 Building vectorstore with knowledge...'):
+                            full_text = "\n".join(full_text)
+
+                            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                            texts = text_splitter.create_documents([full_text])
+                            # Select embeddings
+                            embeddings = st.session_state['hf']
+                            # Create a vectorstore from documents
+                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                            db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+
+                        with st.spinner('🔨 Saving vectorstore...'):
+                            # save vectorstore
+                            db.persist()
+                            #create .zip file of directory to download
+                            shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
+                            # save in session state and download
+                            st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
+                        
+                        with st.spinner('🔨 Creating QA chain...'):
+                            # Create retriever interface
+                            retriever = db.as_retriever()
+                            # Create QA chain
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            st.session_state['god_mode'] = qa
+                            st.session_state['god_mode_source'] = source
+                            st.session_state['god_mode_info'] = "🧠 GOD MODE have builded a vectorstore about **" + topic + f"**. The knowledge is based on\n- {len(news)} news🗞\n- {len(yt_ids)} YT videos📺\n- {len(links)} websites🌐 \n"
+                        
+                        st.experimental_rerun()
+                                
+
+        if st.session_state['plugin'] == "🧠 GOD MODE" and 'god_mode' in st.session_state:
+            with st.expander("**✅ GOD MODE is enabled 🚀**", expanded=True):
+                st.markdown(st.session_state['god_mode_info'])
+                if 'db' in st.session_state:
+                    # leave ./ from name for download
+                    file_name = st.session_state['db'][2:]
+                    st.download_button(
+                        label="📩 Download vectorstore",
+                        data=open(file_name, 'rb').read(),
+                        file_name=file_name,
+                        mime='application/zip'
+                    )
+                if st.button('🧠🛑 Disable GOD MODE'):
+                    del st.session_state['god_mode']
+                    del st.session_state['db']
+                    del st.session_state['god_mode_info']
+                    del st.session_state['god_mode_source']
+                    del st.session_state['plugin']
+                    st.experimental_rerun()
+            with st.expander("🌍 View source"):
+                for s in st.session_state['god_mode_source']:
+                    st.markdown("- " + s)
 
 # DATA PLUGIN
         if st.session_state['plugin'] == "📋 Talk with your DATA" and 'df' not in st.session_state:
@@ -316,14 +468,14 @@ with st.sidebar:
                     
         if st.session_state['plugin'] == "🎧 Talk with your AUDIO":
             if 'db' in st.session_state:
-                # leave ./ from name for download
-                file_name = st.session_state['db'][2:]
-                st.download_button(
-                    label="📩 Download vectorstore",
-                    data=open(st.session_state['db'], 'rb').read(),
-                    file_name=file_name,
-                    mime='application/zip'
-                )
+                    # leave ./ from name for download
+                    file_name = st.session_state['db'][2:]
+                    st.download_button(
+                        label="📩 Download vectorstore",
+                        data=open(file_name, 'rb').read(),
+                        file_name=file_name,
+                        mime='application/zip'
+                    )
             if st.button('🛑🎙 Remove AUDIO from context'):
                 if 'audio' in st.session_state:
                     del st.session_state['db']
@@ -409,7 +561,7 @@ with st.sidebar:
                 file_name = st.session_state['db'][2:]
                 st.download_button(
                     label="📩 Download vectorstore",
-                    data=open(st.session_state['db'], 'rb').read(),
+                    data=open(file_name, 'rb').read(),
                     file_name=file_name,
                     mime='application/zip'
                 )
@@ -469,7 +621,7 @@ with st.sidebar:
                 file_name = st.session_state['db'][2:]
                 st.download_button(
                     label="📩 Download vectorstore",
-                    data=open(st.session_state['db'], 'rb').read(),
+                    data=open(file_name, 'rb').read(),
                     file_name=file_name,
                     mime='application/zip'
                 )

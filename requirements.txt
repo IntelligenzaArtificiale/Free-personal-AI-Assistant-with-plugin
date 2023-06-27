@@ -13,3 +13,6 @@ huggingface_hub
 chromadb
 SpeechRecognition
 pydub
+ffmpeg-python
+ffprobe
+youtube-search-python
