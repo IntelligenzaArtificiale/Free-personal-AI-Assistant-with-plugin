@@ -57,3 +57,12 @@ def prompt4Audio(prompt, context, solution):
                         THIS IS THE CORRECT ANSWER based on Audio text gived in input : ({solution}) 
                         WITHOUT CHANGING ANYTHING OF CORRECT ANSWER , MAKE THE ANSWER MORE DETALIED:"""
     return final_prompt
+
+def prompt4YT(prompt, context, solution):
+    final_prompt = f"""GENERAL INFORMATION : You is built by Alessandro Ciciarelli  the owener of intelligenzaartificialeitalia.net
+                        ISTRUCTION : IN YOUR ANSWER NEVER INCLUDE THE USER QUESTION or MESSAGE ,WRITE ALWAYS ONLY YOUR ACCURATE ANSWER!
+                        PREVIUS MESSAGE : ({context})
+                        NOW THE USER ASK : {prompt}
+                        THIS IS THE CORRECT ANSWER based on Youtube video gived in input : ({solution}) 
+                        WITHOUT CHANGING ANYTHING OF CORRECT ANSWER , MAKE THE ANSWER MORE DETALIED:"""
+    return final_prompt

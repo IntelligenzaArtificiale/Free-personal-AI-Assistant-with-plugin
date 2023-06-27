@@ -1,3 +1,7 @@
+import random
+import shutil
+import string
+from zipfile import ZipFile
 import streamlit as st
 from streamlit_chat import message
 from streamlit_extras.colored_header import colored_header
@@ -10,13 +14,14 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 import sketch
 from langchain.text_splitter import CharacterTextSplitter
-from promptTemplate import prompt4conversation, prompt4Data, prompt4Code, prompt4PDF, prompt4Audio
+from promptTemplate import prompt4conversation, prompt4Data, prompt4Code, prompt4PDF, prompt4Audio, prompt4YT
 from promptTemplate import prompt4conversationInternet
 from exportchat import export_chat
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from HuggingChatAPI import HuggingChat
 from langchain.embeddings import HuggingFaceHubEmbeddings
+from youtube_transcript_api import YouTubeTranscriptApi
 import pdfplumber
 import docx2txt
 from duckduckgo_search import DDGS
@@ -28,12 +33,17 @@ import os
 
 hf = None
 repo_id = "sentence-transformers/all-mpnet-base-v2"
+
 if 'hf_token' in st.session_state:
-    hf = HuggingFaceHubEmbeddings(
-        repo_id=repo_id,
-        task="feature-extraction",
-        huggingfacehub_api_token=st.session_state['hf_token'],
-    ) # type: ignore
+    if 'hf' not in st.session_state:
+        hf = HuggingFaceHubEmbeddings(
+            repo_id=repo_id,
+            task="feature-extraction",
+            huggingfacehub_api_token=st.session_state['hf_token'],
+        ) # type: ignore
+        st.session_state['hf'] = hf
+
+
 
 st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
 st.markdown('<style>.css-w770g5{\
@@ -41,7 +51,9 @@ st.markdown('<style>.css-w770g5{\
             .css-b3z5c9{    \
             width: 100%;}\
             .stButton>button{\
-            width: 100%;\
+            width: 100%;}\
+            .stDownloadButton>button{\
+            width: 100%;}\
             </style>', unsafe_allow_html=True)
 
 
@@ -98,7 +110,7 @@ with st.sidebar:
             max_new_tokens = st.slider('📝 Max New Tokens', min_value=1, max_value=1024, value=1024, step=1)
     
         #plugins for conversation
-        plugins = ["🛑 No PLUGIN","🌐 Web Search", "📋 Talk with your DATA", "📝 Talk with your DOCUMENTS", "🎧 Talk with your AUDIO", "🎥 Talk with your VIDEO"]
+        plugins = ["🛑 No PLUGIN","🌐 Web Search", "🔗 Talk with Website" , "📋 Talk with your DATA", "📝 Talk with your DOCUMENTS", "🎧 Talk with your AUDIO", "🎥 Talk with YT video", "💾 Upload saved VectorStore"]
         if 'plugin' not in st.session_state:
             st.session_state['plugin'] = st.selectbox('🔌 Plugins', plugins, index=0)
         else:
@@ -111,7 +123,7 @@ with st.sidebar:
 # WEB SEARCH PLUGIN
         if st.session_state['plugin'] == "🌐 Web Search" and 'web_search' not in st.session_state:
             # web search settings
-            with st.expander("🌐 Web Search Settings"):
+            with st.expander("🌐 Web Search Settings", expanded=True):
                 if 'web_search' not in st.session_state or st.session_state['web_search'] == False:
                     reg = ['us-en', 'uk-en', 'it-it']
                     sf = ['on', 'moderate', 'off']
@@ -137,7 +149,7 @@ with st.sidebar:
                         st.experimental_rerun()
 
         elif st.session_state['plugin'] == "🌐 Web Search" and st.session_state['web_search'] == 'True':
-            with st.expander("🌐 Web Search Settings"):
+            with st.expander("🌐 Web Search Settings", expanded=True):
                 st.write('🚀 Web Search is enabled')
                 st.write('🗺 Region: ', st.session_state['region'])
                 st.write('🚨 Safe Search: ', st.session_state['safesearch'])
@@ -154,15 +166,16 @@ with st.sidebar:
 
 # DATA PLUGIN
         if st.session_state['plugin'] == "📋 Talk with your DATA" and 'df' not in st.session_state:
-            with st.expander("📋 Talk with your DATA"):
+            with st.expander("📋 Talk with your DATA", expanded= True):
                 upload_csv = st.file_uploader("Upload your CSV", type=['csv'])
                 if upload_csv is not None:
                     df = pd.read_csv(upload_csv)
                     st.session_state['df'] = df
                     st.experimental_rerun()
-        elif 'df' in st.session_state and st.session_state['plugin'] == "📋 Talk with your DATA":
-            if st.button('📋 Remove DATA from context'):
-                del st.session_state['df']
+        if st.session_state['plugin'] == "📋 Talk with your DATA":
+            if st.button('🛑📋 Remove DATA from context'):
+                if 'df' in st.session_state:
+                    del st.session_state['df']
                 del st.session_state['plugin']
                 st.experimental_rerun()
 
@@ -170,44 +183,67 @@ with st.sidebar:
 
 # DOCUMENTS PLUGIN
         if st.session_state['plugin'] == "📝 Talk with your DOCUMENTS" and 'documents' not in st.session_state:
-            with st.expander("📝 Talk with your DOCUMENT"):
-                upload_pdf = st.file_uploader("Upload your DOCUMENT", type=['txt', 'pdf', 'docx'])
-                if upload_pdf is not None:
+            with st.expander("📝 Talk with your DOCUMENT", expanded=True):  
+                upload_pdf = st.file_uploader("Upload your DOCUMENT", type=['txt', 'pdf', 'docx'], accept_multiple_files=True)
+                if upload_pdf is not None and st.button('📝 Load Documents'):
                     documents = []
-                    print(upload_pdf.type)
-                    if upload_pdf.type == 'text/plain':
-                        documents = [upload_pdf.read().decode()]
-                    elif upload_pdf.type == 'application/pdf':
-                        with pdfplumber.open(upload_pdf) as pdf:
-                            documents = [page.extract_text() for page in pdf.pages]
-                    elif upload_pdf.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                        text = docx2txt.process(upload_pdf)
-                        documents = [text]
+                    with st.spinner('🔨 Reading documents...'):
+                        for upload_pdf in upload_pdf:
+                            print(upload_pdf.type)
+                            if upload_pdf.type == 'text/plain':
+                                documents += [upload_pdf.read().decode()]
+                            elif upload_pdf.type == 'application/pdf':
+                                with pdfplumber.open(upload_pdf) as pdf:
+                                    documents += [page.extract_text() for page in pdf.pages]
+                            elif upload_pdf.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                                text = docx2txt.process(upload_pdf)
+                                documents += [text]
                     st.session_state['documents'] = documents
                     # Split documents into chunks
                     with st.spinner('🔨 Creating vectorstore...'):
                         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
                         texts = text_splitter.create_documents(documents)
                         # Select embeddings
-                        embeddings = hf
+                        embeddings = st.session_state['hf']
                         # Create a vectorstore from documents
-                        db = Chroma.from_documents(texts, embeddings)
+                        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                        db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+                        # save vectorstore
+                        db.persist()
+                        #create .zip file of directory to download
+                        shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
+                        # save in session state and download
+                        st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
                         # Create retriever interface
                         retriever = db.as_retriever()
                         # Create QA chain
                         qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
                         st.session_state['pdf'] = qa
+
                     st.experimental_rerun()
-        elif 'pdf' in st.session_state and st.session_state['plugin'] == "📝 Talk with your DOCUMENTS":
-            if st.button('📝 Remove PDF from context'):
-                del st.session_state['pdf']
+
+        if st.session_state['plugin'] == "📝 Talk with your DOCUMENTS":
+            if 'db' in st.session_state:
+                # leave ./ from name for download
+                file_name = st.session_state['db'][2:]
+                st.download_button(
+                    label="📩 Download vectorstore",
+                    data=open(file_name, 'rb').read(),
+                    file_name=file_name,
+                    mime='application/zip'
+                )
+            if st.button('🛑📝 Remove PDF from context'):
+                if 'pdf' in st.session_state:
+                    del st.session_state['db']
+                    del st.session_state['pdf']
+                    del st.session_state['documents']
                 del st.session_state['plugin']
-                del st.session_state['documents']
+                    
                 st.experimental_rerun()
 
 # AUDIO PLUGIN
         if st.session_state['plugin'] == "🎧 Talk with your AUDIO" and 'audio' not in st.session_state:
-            with st.expander("🎙 Talk with your AUDIO"):
+            with st.expander("🎙 Talk with your AUDIO", expanded=True):
                 f = st.file_uploader("Upload your AUDIO", type=['wav', 'mp3', 'flac'])
                 if f is not None:
                     path_in = f.name
@@ -251,9 +287,16 @@ with st.sidebar:
                             text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
                             texts = text_splitter.create_documents([text_value])
 
-                            embeddings = hf
+                            embeddings = st.session_state['hf']
                             # Create a vectorstore from documents
-                            db = Chroma.from_documents(texts, embeddings)
+                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                            db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+                            # save vectorstore
+                            db.persist()
+                            #create .zip file of directory to download
+                            shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
+                            # save in session state and download
+                            st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
                             # Create retriever interface
                             retriever = db.as_retriever()
                             # Create QA chain
@@ -263,17 +306,143 @@ with st.sidebar:
                         st.experimental_rerun()
                     else:
                         st.error("The file is too big. Please upload a file smaller than 30MB")
-        elif 'audio' in st.session_state and st.session_state['plugin'] == "🎧 Talk with your AUDIO":
-            if st.button('🎙 Remove AUDIO from context'):
-                del st.session_state['audio']
-                del st.session_state['audio_text']
+        if st.session_state['plugin'] == "🎧 Talk with your AUDIO":
+            if 'db' in st.session_state:
+                # leave ./ from name for download
+                file_name = st.session_state['db'][2:]
+                st.download_button(
+                    label="📩 Download vectorstore",
+                    data=open(st.session_state['db'], 'rb').read(),
+                    file_name=file_name,
+                    mime='application/zip'
+                )
+            if st.button('🛑🎙 Remove AUDIO from context'):
+                if 'audio' in st.session_state:
+                    del st.session_state['db']
+                    del st.session_state['audio']
+                    del st.session_state['audio_text']
                 del st.session_state['plugin']
                 st.experimental_rerun()
 
 
- 
-    
+# YT PLUGIN
+        if st.session_state['plugin'] == "🎥 Talk with YT video" and 'yt' not in st.session_state:
+            with st.expander("🎥 Talk with YT video", expanded=True):
+                yt_url = st.text_input("1.📺 Enter a YouTube URL")
+                yt_url2 = st.text_input("2.📺 Enter a YouTube URL")
+                yt_url3 = st.text_input("3.📺 Enter a YouTube URL")
+                if yt_url is not None and st.button('🎥 Add YouTube video to context'):
+                    if yt_url != "":
+                        video = 1
+                        yt_url = yt_url.split("=")[1]
+                        if yt_url2 != "":
+                            yt_url2 = yt_url2.split("=")[1]
+                            video = 2
+                        if yt_url3 != "":
+                            yt_url3 = yt_url3.split("=")[1]
+                            video = 3
 
+                        text_yt = []
+                        text_list = []
+                        for i in range(video):
+                            with st.spinner(f'🎥 Extracting TEXT from YouTube video {str(i)} ...'):
+                                #get en subtitles
+                                transcript_list = YouTubeTranscriptApi.list_transcripts(yt_url)
+                                transcript_en = None
+                                last_language = ""
+                                for transcript in transcript_list:
+                                    if transcript.language_code == 'en':
+                                        transcript_en = transcript
+                                        break
+                                    else:
+                                        last_language = transcript.language_code
+                                if transcript_en is None:   
+                                    transcript_en = transcript_list.find_transcript([last_language])
+                                    transcript_en = transcript_en.translate('en')
+
+                                text = transcript_en.fetch()
+                                text_yt.append(text)
+
+                        for i in range(len(text_yt)):
+                            for j in range(len(text_yt[i])):
+                                text_list.append(text_yt[i][j]['text'])
+                        
+                        # creating a vectorstore
+
+                        with st.spinner('🎥 Creating Vectorstore...'):
+                            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                            texts = text_splitter.create_documents(text_list)
+                            # Select embeddings
+                            embeddings = st.session_state['hf']
+                            # Create a vectorstore from documents
+                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                            db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+                            # save vectorstore
+                            db.persist()
+                            #create .zip file of directory to download
+                            shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
+                            # save in session state and download
+                            st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
+                            # Create retriever interface
+                            retriever = db.as_retriever()
+                            # Create QA chain
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            st.session_state['yt'] = qa
+                            st.session_state['yt_text'] = text_list
+                        st.experimental_rerun()
+
+        if st.session_state['plugin'] == "🎥 Talk with YT video":
+            if 'db' in st.session_state:
+                # leave ./ from name for download
+                file_name = st.session_state['db'][2:]
+                st.download_button(
+                    label="📩 Download vectorstore",
+                    data=open(st.session_state['db'], 'rb').read(),
+                    file_name=file_name,
+                    mime='application/zip'
+                )
+
+            if st.button('🛑🎥 Remove YT video from context'):
+                if 'yt' in st.session_state:
+                    del st.session_state['db']
+                    del st.session_state['yt']
+                    del st.session_state['yt_text']
+                del st.session_state['plugin']
+                st.experimental_rerun()
+
+
+# UPLOAD PREVIUS VECTORSTORE
+        if st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' not in st.session_state:
+            with st.expander("🗂 Upload saved VectorStore", expanded=True):
+                db_file = st.file_uploader("Upload a saved VectorStore", type=["zip"])
+                if db_file is not None and st.button('🗂 Add saved VectorStore to context'):
+                    if db_file != "":
+                        # unzip file in a new directory
+                        with ZipFile(db_file, 'r') as zipObj:
+                            # Extract all the contents of zip file in different directory
+                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                            zipObj.extractall("chroma_db_" + random_str)
+                        # save in session state the path of the directory
+                        st.session_state['old_db'] = "chroma_db_" + random_str
+                        hf = st.session_state['hf']
+                        # Create retriever interface
+                        db = Chroma("chroma_db_" + random_str, embedding_function=hf)
+                        retriever = db.as_retriever()
+                        # Create QA chain
+                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                        st.session_state['old_db'] = qa
+                        st.experimental_rerun()
+
+        if st.session_state['plugin'] == "💾 Upload saved VectorStore":
+            if st.button('🛑💾 Remove VectorStore from context'):
+                if 'old_db' in st.session_state:
+                    del st.session_state['old_db']
+                del st.session_state['plugin']
+                st.experimental_rerun()
+
+
+# END OF PLUGIN
+    add_vertical_space(4)
     if 'hf_email' in st.session_state:
         if st.button('🗑 Logout'):
             keys = list(st.session_state.keys())
@@ -281,9 +450,14 @@ with st.sidebar:
                 del st.session_state[key]
             st.experimental_rerun()
 
+    export_chat()
     add_vertical_space(7)
+    html_chat = '<center><h6>🤗 Support the project with a donation for the development of new features 🤗</h6>'
+    html_chat += '<br><a href="https://rebrand.ly/SupportAUTOGPTfree"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal donate button" /></a><center><br>'
+    st.markdown(html_chat, unsafe_allow_html=True)
     st.write('Made with ❤️ by [Alessandro CIciarelli](https://intelligenzaartificialeitalia.net)')
 
+##### End of sidebar
 
 keys = list(st.session_state.keys())
 for key in keys:
@@ -313,6 +487,12 @@ with input_container:
     if 'audio' in st.session_state:
         with st.expander("🗂 View your AUDIO"):
             st.write(st.session_state['audio_text'])
+    if 'yt' in st.session_state:
+        with st.expander("🗂 View your YT video"):
+            st.write(st.session_state['yt_text'])
+    if 'old_db' in st.session_state:
+        with st.expander("🗂 View your saved VectorStore"):
+            st.success("📚 VectorStore loaded")
 
 # Response output
 ## Function for taking user prompt as input followed by producing AI generated responses
@@ -333,11 +513,19 @@ def generate_response(prompt):
                 final_prompt = prompt4Data(prompt, context, solution)
         print(final_prompt)
 
-    elif st.session_state['plugin'] == "📄 Talk with your DOCUMENT" and 'pdf' in st.session_state:
+    elif st.session_state['plugin'] == "📝 Talk with your DOCUMENTS" and 'pdf' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['pdf'].run(prompt)
+            final_prompt = prompt4PDF(prompt, context, solution)
+        print(final_prompt)
+
+    elif st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' in st.session_state:
+        #get only last message
+        context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
+        with st.spinner('🚀 Using tool to get information...'):
+            solution = st.session_state['old_db'].run(prompt)
             final_prompt = prompt4PDF(prompt, context, solution)
         print(final_prompt)
 
@@ -349,6 +537,12 @@ def generate_response(prompt):
             final_prompt = prompt4Audio(prompt, context, solution)
         print(final_prompt)
 
+    elif st.session_state['plugin'] == "🎥 Talk with YT video" and 'yt' in st.session_state:
+        context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
+        with st.spinner('🚀 Using tool to get information...'):
+            solution = st.session_state['yt'].run(prompt)
+            final_prompt = prompt4YT(prompt, context, solution)
+        print(final_prompt)
 
     else:
         #get last message if exists
@@ -395,9 +589,9 @@ with response_container:
         if st.session_state['generated']:
             for i in range(len(st.session_state['generated'])-1, -1, -1):
                 message(st.session_state["generated"][i], key=str(i+100))
-                message(st.session_state['past'][i], is_user=True, key=str(i+100) + '_user')
+                message(st.session_state['past'][i], is_user=True, key=str(i+100) + '_user') # type: ignore
             st.markdown('<br><hr><br>', unsafe_allow_html=True)
-            export_chat()
+            
             
     else:
         st.info("👋 Hey , we are very happy to see you here 🤗")

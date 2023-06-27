@@ -6,7 +6,4 @@ pdfplumber
 pandas
 langchain
 duckduckgo-search
-sketch
-docx2txt
-huggingface_hub
-chromadb
+YouTubeTranscriptApi

@@ -38,7 +38,6 @@ def export_chat():
         with open('chat.html', 'w') as f:
             f.write(html_chat)
         #download file
-        add_vertical_space(7)
         st.download_button(
             label="📚 Download chat",
             data=html_chat,
