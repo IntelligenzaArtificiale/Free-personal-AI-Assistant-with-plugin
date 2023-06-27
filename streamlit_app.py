@@ -46,7 +46,7 @@ if 'hf_token' in st.session_state:
 
 
 st.set_page_config(
-    page_title="Speech-to-Text Transcription App", page_icon="🤗💬", layout="wide", initial_sidebar_state="expanded"
+    page_title="Talk with evrythings💬", page_icon="🤗", layout="wide", initial_sidebar_state="expanded"
 )
 
 st.markdown('<style>.css-w770g5{\
