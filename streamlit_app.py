@@ -39,7 +39,10 @@ st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
 st.markdown('<style>.css-w770g5{\
             width: 100%;}\
             .css-b3z5c9{    \
-            width: 100%;}</style>', unsafe_allow_html=True)
+            width: 100%;}\
+            .stButton>button{\
+            width: 100%;\
+            </style>', unsafe_allow_html=True)
 
 
 
@@ -294,10 +297,13 @@ colored_header(label='', description='', color_name='blue-70')
 response_container = st.container()
 
 
-## Function for taking user provided prompt as input
-def get_text():
-    input_text = st.text_input("🧑‍💻 YOU 👇", "", key="input")
-    test = st.button("🧑‍💻 SEND", on_click=go)
+
+
+## Applying the user input box
+with input_container:
+    with st.form("🧑‍💻 Input your prompt"):
+        input_text = st.text_input("🧑‍💻 YOU 👇", "", key="input")
+        submitted = st.form_submit_button("🧑‍💻 SEND")
     if 'df' in st.session_state:
         with st.expander("🗂 View your DATA"):
             st.data_editor(st.session_state['df'], use_container_width=True)
@@ -307,12 +313,6 @@ def get_text():
     if 'audio' in st.session_state:
         with st.expander("🗂 View your AUDIO"):
             st.write(st.session_state['audio_text'])
-    return input_text
-
-
-## Applying the user input box
-with input_container:
-    user_input = get_text()
 
 # Response output
 ## Function for taking user prompt as input followed by producing AI generated responses
@@ -384,11 +384,10 @@ def generate_response(prompt):
 
 ## Conditional display of AI generated responses as a function of user provided prompts
 with response_container:
-    def go():
-        if user_input and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
-            response = generate_response(user_input)
-            st.session_state.past.append(user_input)
-            st.session_state.generated.append(response)
+    if submitted and user_input and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
+        response = generate_response(user_input)
+        st.session_state.past.append(user_input)
+        st.session_state.generated.append(response)
     
 
     #print message in reverse order frist message always bot
