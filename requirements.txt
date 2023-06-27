@@ -6,4 +6,4 @@ pdfplumber
 pandas
 langchain
 duckduckgo-search
-YouTubeTranscriptApi
+youtube-transcript-api
