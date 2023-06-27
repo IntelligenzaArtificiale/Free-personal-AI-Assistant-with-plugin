@@ -554,19 +554,19 @@ with input_container:
         input_text = st.text_input("🧑‍💻 YOU 👇", "", key="input")
         submitted = st.form_submit_button("🧑‍💻 SEND")
     if 'df' in st.session_state:
-        with st.expander("🗂 View your DATA"):
+        with st.expander("🤖 View your DATA"):
             st.data_editor(st.session_state['df'], use_container_width=True)
     if 'pdf' in st.session_state:
-        with st.expander("🗂 View your DOCUMENT"):
+        with st.expander("🤖 View your DOCUMENT"):
             st.write(st.session_state['documents'])
     if 'audio' in st.session_state:
-        with st.expander("🗂 View your AUDIO"):
+        with st.expander("🤖 View your AUDIO"):
             st.write(st.session_state['audio_text'])
     if 'yt' in st.session_state:
-        with st.expander("🗂 View your YT video"):
+        with st.expander("🤖 View your YT video"):
             st.write(st.session_state['yt_text'])
     if 'web_text' in st.session_state:
-        with st.expander("🗂 View your Website"):
+        with st.expander("🤖 View Website content"):
             st.write(st.session_state['web_text'])
     if 'old_db' in st.session_state:
         with st.expander("🗂 View your saved VectorStore"):
