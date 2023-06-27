@@ -751,6 +751,14 @@ def generate_response(prompt):
             final_prompt = prompt4PDF(prompt, context, solution)
         print(final_prompt)
 
+    elif st.session_state['plugin'] == "🧠 GOD MODE" and 'god_mode' in st.session_state:
+        #get only last message
+        context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
+        with st.spinner('🚀 Using tool to get information...'):
+            solution = st.session_state['god_mode'].run(prompt)
+            final_prompt = prompt4PDF(prompt, context, solution)
+        print(final_prompt)
+
     elif st.session_state['plugin'] == "🔗 Talk with Website" and 'web_sites' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
