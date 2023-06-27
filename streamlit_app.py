@@ -297,6 +297,7 @@ response_container = st.container()
 ## Function for taking user provided prompt as input
 def get_text():
     input_text = st.text_input("🧑‍💻 YOU 👇", "", key="input")
+    st.button("🧑‍💻 SEND", key="send", on_click=go())
     if 'df' in st.session_state:
         with st.expander("🗂 View your DATA"):
             st.data_editor(st.session_state['df'], use_container_width=True)
@@ -383,10 +384,11 @@ def generate_response(prompt):
 
 ## Conditional display of AI generated responses as a function of user provided prompts
 with response_container:
-    if user_input and 'hf_email' in st.session_state and 'hf_pass' in st.session_state and st.button('Send🤗'):
-        response = generate_response(user_input)
-        st.session_state.past.append(user_input)
-        st.session_state.generated.append(response)
+    def go():
+        if user_input and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
+            response = generate_response(user_input)
+            st.session_state.past.append(user_input)
+            st.session_state.generated.append(response)
     
 
     #print message in reverse order frist message always bot
