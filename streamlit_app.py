@@ -188,7 +188,7 @@ with st.sidebar:
         if st.session_state['plugin'] == "📝 Talk with your DOCUMENTS" and 'documents' not in st.session_state:
             with st.expander("📝 Talk with your DOCUMENT", expanded=True):  
                 upload_pdf = st.file_uploader("Upload your DOCUMENT", type=['txt', 'pdf', 'docx'], accept_multiple_files=True)
-                if upload_pdf is not None and st.button('📝 Load Documents'):
+                if upload_pdf is not None and st.button('📝✅ Load Documents'):
                     documents = []
                     with st.spinner('🔨 Reading documents...'):
                         for upload_pdf in upload_pdf:
@@ -334,7 +334,7 @@ with st.sidebar:
                 yt_url = st.text_input("1.📺 Enter a YouTube URL")
                 yt_url2 = st.text_input("2.📺 Enter a YouTube URL")
                 yt_url3 = st.text_input("3.📺 Enter a YouTube URL")
-                if yt_url is not None and st.button('🎥 Add YouTube video to context'):
+                if yt_url is not None and st.button('🎥✅ Add YouTube video to context'):
                     if yt_url != "":
                         video = 1
                         yt_url = yt_url.split("=")[1]
@@ -416,9 +416,9 @@ with st.sidebar:
 
 # UPLOAD PREVIUS VECTORSTORE
         if st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' not in st.session_state:
-            with st.expander("🗂 Upload saved VectorStore", expanded=True):
+            with st.expander("💾 Upload saved VectorStore", expanded=True):
                 db_file = st.file_uploader("Upload a saved VectorStore", type=["zip"])
-                if db_file is not None and st.button('🗂 Add saved VectorStore to context'):
+                if db_file is not None and st.button('✅💾 Add saved VectorStore to context'):
                     if db_file != "":
                         # unzip file in a new directory
                         with ZipFile(db_file, 'r') as zipObj:
@@ -461,10 +461,6 @@ with st.sidebar:
     st.write('Made with ❤️ by [Alessandro CIciarelli](https://intelligenzaartificialeitalia.net)')
 
 ##### End of sidebar
-
-keys = list(st.session_state.keys())
-for key in keys:
-    print(st.session_state[key])
 
 
 # User input
