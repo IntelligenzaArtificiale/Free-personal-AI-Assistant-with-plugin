@@ -3,6 +3,7 @@ hugchat
 streamlit-chat
 streamlit-extras
 pdfplumber
+docx2txt
 pandas
 langchain
 duckduckgo-search
