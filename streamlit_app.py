@@ -1,3 +1,4 @@
+import io
 import random
 import shutil
 import string
@@ -22,12 +23,15 @@ from langchain.chains import RetrievalQA
 from HuggingChatAPI import HuggingChat
 from langchain.embeddings import HuggingFaceHubEmbeddings
 from youtube_transcript_api import YouTubeTranscriptApi
+import requests
+from bs4 import BeautifulSoup
+import speech_recognition as sr
 import pdfplumber
 import docx2txt
 from duckduckgo_search import DDGS
 from itertools import islice
-import requests
-import json
+from os import path
+from pydub import AudioSegment
 import os
 
 
@@ -211,12 +215,16 @@ with st.sidebar:
                         # Create a vectorstore from documents
                         random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
                         db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+
+                    with st.spinner('🔨 Saving vectorstore...'):
                         # save vectorstore
                         db.persist()
                         #create .zip file of directory to download
                         shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
                         # save in session state and download
                         st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
+                    
+                    with st.spinner('🔨 Creating QA chain...'):
                         # Create retriever interface
                         retriever = db.as_retriever()
                         # Create QA chain
@@ -247,68 +255,65 @@ with st.sidebar:
 # AUDIO PLUGIN
         if st.session_state['plugin'] == "🎧 Talk with your AUDIO" and 'audio' not in st.session_state:
             with st.expander("🎙 Talk with your AUDIO", expanded=True):
-                f = st.file_uploader("Upload your AUDIO", type=['wav', 'mp3', 'flac'])
+                f = st.file_uploader("Upload your AUDIO", type=['wav', 'mp3'])
                 if f is not None:
-                    path_in = f.name
-                    # Get file size from buffer
-                    # Source: https://stackoverflow.com/a/19079887
-                    old_file_position = f.tell()
-                    f.seek(0, os.SEEK_END)
-                    getsize = f.tell()  # os.path.getsize(path_in)
-                    f.seek(old_file_position, os.SEEK_SET)
-                    getsize = round((getsize / 1000000), 1)
-                    # st.caption("The size of this file is: " + str(getsize) + "MB")
-                    # getsize
-
-                    if getsize < 30:  # File more than 30MB
-
-                        # To read file as bytes:
-                        bytes_data = f.getvalue()
-
-                        api_token = st.session_state['hf_token']
-
-                        headers = {"Authorization": f"Bearer {api_token}"}
-                        API_URL = "https://api-inference.huggingface.co/models/facebook/wav2vec2-base-960h"
-
-                        def query(data):
-                            response = requests.request(
-                                "POST", API_URL, headers=headers, data=data
-                            )
-                            return json.loads(response.content.decode("utf-8"))
-
-                        with st.spinner('🎙 Transcribing your audio...'):
-                                data = query(bytes_data)
-
-                        # data = query(bytes_data)
-                        with st.spinner('🎙 Creating Vectorstore...'):
-                            values_view = data.values()
-                            value_iterator = iter(values_view)
-                            text_value = next(value_iterator)
-                            text_value = text_value.lower()
-
-                            #split text into chunks
-                            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-                            texts = text_splitter.create_documents([text_value])
-
-                            embeddings = st.session_state['hf']
-                            # Create a vectorstore from documents
-                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-                            db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
-                            # save vectorstore
-                            db.persist()
-                            #create .zip file of directory to download
-                            shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
-                            # save in session state and download
-                            st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
-                            # Create retriever interface
-                            retriever = db.as_retriever()
-                            # Create QA chain
-                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
-                            st.session_state['audio'] = qa
-                            st.session_state['audio_text'] = text_value
-                        st.experimental_rerun()
+                    if f.type == 'audio/mpeg':
+                        #convert mp3 to wav
+                        with st.spinner('🔨 Converting mp3 to wav...'):
+                            #save mp3
+                            with open('audio.mp3', 'wb') as out:
+                                out.write(f.read())
+                            #convert to wav
+                            sound = AudioSegment.from_mp3("audio.mp3")
+                            sound.export("audio.wav", format="wav")
+                            file_name = 'audio.wav'
                     else:
-                        st.error("The file is too big. Please upload a file smaller than 30MB")
+                        with open(f.name, 'wb') as out:
+                            out.write(f.read())
+      
+                        bytes_data = f.read()
+                        file_name = f.name
+                    
+                    r = sr.Recognizer()
+                    #Given audio file must be a filename string or a file-like object
+
+
+                    with st.spinner('🔨 Reading audio...'):
+                        with sr.AudioFile(file_name) as source:
+                            # listen for the data (load audio to memory)
+                            audio_data = r.record(source)
+                            # recognize (convert from speech to text)
+                            text = r.recognize_google(audio_data)
+                    data = [text]
+                    # data = query(bytes_data)
+                    with st.spinner('🎙 Creating Vectorstore...'):
+
+                        #split text into chunks
+                        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                        texts = text_splitter.create_documents(text)
+
+                        embeddings = st.session_state['hf']
+                        # Create a vectorstore from documents
+                        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                        db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+                        # save vectorstore
+                    
+                    with st.spinner('🎙 Saving Vectorstore...'):
+                        db.persist()
+                        #create .zip file of directory to download
+                        shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
+                        # save in session state and download
+                        st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
+
+                    with st.spinner('🎙 Creating QA chain...'):
+                        # Create retriever interface
+                        retriever = db.as_retriever()
+                        # Create QA chain
+                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                        st.session_state['audio'] = qa
+                        st.session_state['audio_text'] = text
+                    st.experimental_rerun()
+                    
         if st.session_state['plugin'] == "🎧 Talk with your AUDIO":
             if 'db' in st.session_state:
                 # leave ./ from name for download
@@ -380,12 +385,16 @@ with st.sidebar:
                             # Create a vectorstore from documents
                             random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
                             db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+
+                        with st.spinner('🎥 Saving Vectorstore...'):
                             # save vectorstore
                             db.persist()
                             #create .zip file of directory to download
                             shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
                             # save in session state and download
                             st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
+
+                        with st.spinner('🎥 Creating QA chain...'):
                             # Create retriever interface
                             retriever = db.as_retriever()
                             # Create QA chain
@@ -413,6 +422,70 @@ with st.sidebar:
                 del st.session_state['plugin']
                 st.experimental_rerun()
 
+# WEBSITE PLUGIN
+        if st.session_state['plugin'] == "🔗 Talk with Website" and 'web_sites' not in st.session_state:
+            with st.expander("🔗 Talk with Website", expanded=True):
+                web_url = st.text_area("🔗 Enter a website URLs , one for each line")
+                if web_url is not None and st.button('🔗✅ Add website to context'):
+                    if web_url != "":
+                        text = []
+                        #max 10 websites
+                        with st.spinner('🔗 Extracting TEXT from Websites ...'):
+                            for url in web_url.split("\n")[:10]:
+                                page = requests.get(url)
+                                soup = BeautifulSoup(page.content, 'html.parser')
+                                text.append(soup.get_text())
+                            # creating a vectorstore
+
+                        with st.spinner('🔗 Creating Vectorstore...'):
+                            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+                            texts = text_splitter.create_documents(text)
+                            # Select embeddings
+                            embeddings = st.session_state['hf']
+                            # Create a vectorstore from documents
+                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                            db = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db_" + random_str)
+                        
+                        with st.spinner('🔗 Saving Vectorstore...'):
+                            # save vectorstore
+                            db.persist()
+                            #create .zip file of directory to download
+                            shutil.make_archive("./chroma_db_" + random_str, 'zip', "./chroma_db_" + random_str)
+                            # save in session state and download
+                            st.session_state['db'] = "./chroma_db_" + random_str + ".zip" 
+                        
+                        with st.spinner('🔗 Creating QA chain...'):
+                            # Create retriever interface
+                            retriever = db.as_retriever()
+                            # Create QA chain
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            st.session_state['web_sites'] = qa
+                            st.session_state['web_text'] = text
+                        st.experimental_rerun()
+        
+        if st.session_state['plugin'] == "🔗 Talk with Website":
+            if 'db' in st.session_state:
+                # leave ./ from name for download
+                file_name = st.session_state['db'][2:]
+                st.download_button(
+                    label="📩 Download vectorstore",
+                    data=open(st.session_state['db'], 'rb').read(),
+                    file_name=file_name,
+                    mime='application/zip'
+                )
+
+            if st.button('🛑🔗 Remove Website from context'):
+                if 'web_sites' in st.session_state:
+                    del st.session_state['db']
+                    del st.session_state['web_sites']
+                    del st.session_state['web_text']
+                del st.session_state['plugin']
+                st.experimental_rerun()
+
+                            
+
+                       
+
 
 # UPLOAD PREVIUS VECTORSTORE
         if st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' not in st.session_state:
@@ -420,21 +493,24 @@ with st.sidebar:
                 db_file = st.file_uploader("Upload a saved VectorStore", type=["zip"])
                 if db_file is not None and st.button('✅💾 Add saved VectorStore to context'):
                     if db_file != "":
-                        # unzip file in a new directory
-                        with ZipFile(db_file, 'r') as zipObj:
-                            # Extract all the contents of zip file in different directory
-                            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-                            zipObj.extractall("chroma_db_" + random_str)
-                        # save in session state the path of the directory
-                        st.session_state['old_db'] = "chroma_db_" + random_str
-                        hf = st.session_state['hf']
-                        # Create retriever interface
-                        db = Chroma("chroma_db_" + random_str, embedding_function=hf)
-                        retriever = db.as_retriever()
-                        # Create QA chain
-                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
-                        st.session_state['old_db'] = qa
-                        st.experimental_rerun()
+                        with st.spinner('💾 Extracting VectorStore...'):
+                            # unzip file in a new directory
+                            with ZipFile(db_file, 'r') as zipObj:
+                                # Extract all the contents of zip file in different directory
+                                random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                                zipObj.extractall("chroma_db_" + random_str)
+                            # save in session state the path of the directory
+                            st.session_state['old_db'] = "chroma_db_" + random_str
+                            hf = st.session_state['hf']
+                            # Create retriever interface
+                            db = Chroma("chroma_db_" + random_str, embedding_function=hf)
+
+                        with st.spinner('💾 Creating QA chain...'):
+                            retriever = db.as_retriever()
+                            # Create QA chain
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            st.session_state['old_db'] = qa
+                            st.experimental_rerun()
 
         if st.session_state['plugin'] == "💾 Upload saved VectorStore":
             if st.button('🛑💾 Remove VectorStore from context'):
@@ -489,6 +565,9 @@ with input_container:
     if 'yt' in st.session_state:
         with st.expander("🗂 View your YT video"):
             st.write(st.session_state['yt_text'])
+    if 'web_text' in st.session_state:
+        with st.expander("🗂 View your Website"):
+            st.write(st.session_state['web_text'])
     if 'old_db' in st.session_state:
         with st.expander("🗂 View your saved VectorStore"):
             st.success("📚 VectorStore loaded")
@@ -517,6 +596,14 @@ def generate_response(prompt):
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['pdf'].run(prompt)
+            final_prompt = prompt4PDF(prompt, context, solution)
+        print(final_prompt)
+
+    elif st.session_state['plugin'] == "🔗 Talk with Website" and 'web_sites' in st.session_state:
+        #get only last message
+        context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
+        with st.spinner('🚀 Using tool to get information...'):
+            solution = st.session_state['web_sites'].run(prompt)
             final_prompt = prompt4PDF(prompt, context, solution)
         print(final_prompt)
 

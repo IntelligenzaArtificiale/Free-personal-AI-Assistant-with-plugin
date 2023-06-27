@@ -11,3 +11,5 @@ youtube-transcript-api
 sketch
 huggingface_hub
 chromadb
+SpeechRecognition
+pydub
