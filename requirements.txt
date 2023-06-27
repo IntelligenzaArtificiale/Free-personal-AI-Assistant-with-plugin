@@ -9,3 +9,4 @@ langchain
 duckduckgo-search
 youtube-transcript-api
 sketch
+huggingface_hub
