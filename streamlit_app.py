@@ -297,7 +297,7 @@ response_container = st.container()
 ## Function for taking user provided prompt as input
 def get_text():
     input_text = st.text_input("🧑‍💻 YOU 👇", "", key="input")
-    test = st.button("🧑‍💻 SEND", key="send", on_click=go())
+    test = st.button("🧑‍💻 SEND", on_click=go)
     if 'df' in st.session_state:
         with st.expander("🗂 View your DATA"):
             st.data_editor(st.session_state['df'], use_container_width=True)
