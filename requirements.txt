@@ -7,3 +7,4 @@ pandas
 langchain
 duckduckgo-search
 youtube-transcript-api
+sketch
