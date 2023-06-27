@@ -45,7 +45,10 @@ if 'hf_token' in st.session_state:
 
 
 
-st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
+st.set_page_config(
+    page_title="Speech-to-Text Transcription App", page_icon="🤗💬", layout="wide", initial_sidebar_state="expanded"
+)
+
 st.markdown('<style>.css-w770g5{\
             width: 100%;}\
             .css-b3z5c9{    \
