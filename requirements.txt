@@ -6,7 +6,7 @@ langchain==0.0.219
 pandas==2.0.1
 pdfplumber==0.9.0
 pydub==0.25.1
-requests==2.25.1
+requests
 sketch==0.3.5
 SpeechRecognition==3.8.1
 streamlit==1.24.0
