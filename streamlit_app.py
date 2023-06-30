@@ -756,14 +756,16 @@ def generate_response(prompt):
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
-                final_prompt += "\n\n✅Source:\n" 
-                for d in result["source_documents"]:
-                    final_prompt += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    final_prompt += "\n\n✅Source:\n" 
+                    for d in result["source_documents"]:
+                        final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
-                source += "\n\n✅Source:\n"
-                for d in result["source_documents"]:
-                    source += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    source += "\n\n✅Source:\n"
+                    for d in result["source_documents"]:
+                        source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🧠 GOD MODE" and 'god_mode' in st.session_state:
@@ -775,14 +777,16 @@ def generate_response(prompt):
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
-                final_prompt += "\n\n✅Source:\n" 
-                for d in result["source_documents"]:
-                    final_prompt += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    final_prompt += "\n\n✅Source:\n" 
+                    for d in result["source_documents"]:
+                        final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
-                source += "\n\n✅Source:\n"
-                for d in result["source_documents"]:
-                    source += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    source += "\n\n✅Source:\n"
+                    for d in result["source_documents"]:
+                        source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🔗 Talk with Website" and 'web_sites' in st.session_state:
@@ -794,14 +798,17 @@ def generate_response(prompt):
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
-                final_prompt += "\n\n✅Source:\n" 
-                for d in result["source_documents"]:
-                    final_prompt += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    final_prompt += "\n\n✅Source:\n" 
+                    for d in result["source_documents"]:
+                        final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
-                source += "\n\n✅Source:\n"
-                for d in result["source_documents"]:
-                    source += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    source += "\n\n✅Source:\n"
+                    for d in result["source_documents"]:
+                        source += "- " + str(d) + "\n"
+                
 
 
     elif st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' in st.session_state:
@@ -813,14 +820,16 @@ def generate_response(prompt):
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
-                final_prompt += "\n\n✅Source:\n" 
-                for d in result["source_documents"]:
-                    final_prompt += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    final_prompt += "\n\n✅Source:\n" 
+                    for d in result["source_documents"]:
+                        final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
-                source += "\n\n✅Source:\n"
-                for d in result["source_documents"]:
-                    source += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    source += "\n\n✅Source:\n"
+                    for d in result["source_documents"]:
+                        source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🎧 Talk with your AUDIO" and 'audio' in st.session_state:
@@ -832,14 +841,16 @@ def generate_response(prompt):
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
-                final_prompt += "\n\n✅Source:\n" 
-                for d in result["source_documents"]:
-                    final_prompt += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    final_prompt += "\n\n✅Source:\n" 
+                    for d in result["source_documents"]:
+                        final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4Audio(prompt, context, solution)
-                source += "\n\n✅Source:\n"
-                for d in result["source_documents"]:
-                    source += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    source += "\n\n✅Source:\n"
+                    for d in result["source_documents"]:
+                        source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🎥 Talk with YT video" and 'yt' in st.session_state:
@@ -850,14 +861,16 @@ def generate_response(prompt):
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
-                final_prompt += "\n\n✅Source:\n" 
-                for d in result["source_documents"]:
-                    final_prompt += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    final_prompt += "\n\n✅Source:\n" 
+                    for d in result["source_documents"]:
+                        final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4YT(prompt, context, solution)
-                source += "\n\n✅Source:\n"
-                for d in result["source_documents"]:
-                    source += "- " + str(d) + "\n"
+                if 'source_documents' in result and len(result["source_documents"]) > 0:
+                    source += "\n\n✅Source:\n"
+                    for d in result["source_documents"]:
+                        source += "- " + str(d) + "\n"
   
 
     else:
