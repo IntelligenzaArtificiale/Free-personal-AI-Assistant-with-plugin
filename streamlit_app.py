@@ -80,27 +80,37 @@ with st.sidebar:
             hf_token = st.text_input('Enter API Token:', type='password')
             if st.button('Login 🚀') and hf_email and hf_pass and hf_token: 
                 with st.spinner('🚀 Logging in...'):
-                    st.session_state['hf_email'] = hf_email
-                    st.session_state['hf_pass'] = hf_pass
-                    st.session_state['hf_token'] = hf_token
-                    sign = Login(st.session_state['hf_email'], st.session_state['hf_pass'])
-                    cookies = sign.login()
-                    sign.saveCookies()
-                    # Create ChatBot                        
-                    chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
-                    st.session_state['chatbot'] = chatbot
-                    id = st.session_state['chatbot'].new_conversation()
-                    st.session_state['chatbot'].change_conversation(id)
-                    st.session_state['conversation'] = id
-                    # Generate empty lists for generated and past.
-                    ## generated stores AI generated responses
-                    if 'generated' not in st.session_state:
-                        st.session_state['generated'] = ["I'm **IA ITALIA chat**, How may I help you ? "]
-                    ## past stores User's questions
-                    if 'past' not in st.session_state:
-                        st.session_state['past'] = ['Hi!']
-                    st.session_state['LLM'] =  HuggingChat(email=st.session_state['hf_email'], psw=st.session_state['hf_pass'])
-                    st.experimental_rerun()
+                    try:
+                        st.session_state['hf_email'] = hf_email
+                        st.session_state['hf_pass'] = hf_pass
+                        st.session_state['hf_token'] = hf_token
+                        sign = Login(st.session_state['hf_email'], st.session_state['hf_pass'])
+                        cookies = sign.login()
+                        sign.saveCookies()
+                        # Create ChatBot                        
+                        chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
+                        st.session_state['chatbot'] = chatbot
+                        id = st.session_state['chatbot'].new_conversation()
+                        st.session_state['chatbot'].change_conversation(id)
+                        st.session_state['conversation'] = id
+                        # Generate empty lists for generated and past.
+                        ## generated stores AI generated responses
+                        if 'generated' not in st.session_state:
+                            st.session_state['generated'] = ["I'm **IA ITALIA chat**, How may I help you ? "]
+                        ## past stores User's questions
+                        if 'past' not in st.session_state:
+                            st.session_state['past'] = ['Hi!']
+                        st.session_state['LLM'] =  HuggingChat(email=st.session_state['hf_email'], psw=st.session_state['hf_pass'])
+                        st.experimental_rerun()
+                    except Exception as e:
+                        st.error(e)
+                        st.info("⚠️ Please check your credentials and try again.")
+                        st.error("⚠️ dont abuse the API")
+                        st.warning("⚠️ If you don't have an account, you can register [here](https://huggingface.co/join).")
+                        from time import sleep
+                        sleep(3)
+                        st.experimental_rerun()
+
     else:
         with st.expander("ℹ️ Advanced Settings"):
             #temperature: Optional[float]. Default is 0.5
