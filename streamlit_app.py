@@ -292,7 +292,7 @@ with st.sidebar:
                             # Create retriever interface
                             retriever = db.as_retriever()
                             # Create QA chain
-                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever, return_source_documents=True)
                             st.session_state['god_mode'] = qa
                             st.session_state['god_mode_source'] = source
                             st.session_state['god_mode_info'] = "🧠 GOD MODE have builded a vectorstore about **" + topic + f"**. The knowledge is based on\n- {len(news)} news🗞\n- {len(yt_ids)} YT videos📺\n- {len(links)} websites🌐 \n"
@@ -460,7 +460,7 @@ with st.sidebar:
                         # Create retriever interface
                         retriever = db.as_retriever()
                         # Create QA chain
-                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever, return_source_documents=True)
                         st.session_state['audio'] = qa
                         st.session_state['audio_text'] = text
                     st.experimental_rerun()
@@ -549,7 +549,7 @@ with st.sidebar:
                             # Create retriever interface
                             retriever = db.as_retriever()
                             # Create QA chain
-                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever, return_source_documents=True)
                             st.session_state['yt'] = qa
                             st.session_state['yt_text'] = text_list
                         st.experimental_rerun()
@@ -609,7 +609,7 @@ with st.sidebar:
                             # Create retriever interface
                             retriever = db.as_retriever()
                             # Create QA chain
-                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever, return_source_documents=True)
                             st.session_state['web_sites'] = qa
                             st.session_state['web_text'] = text
                         st.experimental_rerun()
@@ -659,7 +659,7 @@ with st.sidebar:
                         with st.spinner('💾 Creating QA chain...'):
                             retriever = db.as_retriever()
                             # Create QA chain
-                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                            qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever, return_source_documents=True)
                             st.session_state['old_db'] = qa
                             st.experimental_rerun()
 
