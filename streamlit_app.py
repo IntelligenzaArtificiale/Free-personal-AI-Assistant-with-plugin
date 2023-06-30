@@ -96,7 +96,7 @@ with st.sidebar:
                     # Generate empty lists for generated and past.
                     ## generated stores AI generated responses
                     if 'generated' not in st.session_state:
-                        st.session_state['generated'] = ["I'm IA ITALIA chat, How may I help you?"]
+                        st.session_state['generated'] = ["I'm **IA ITALIA chat**, How may I help you ? "]
                     ## past stores User's questions
                     if 'past' not in st.session_state:
                         st.session_state['past'] = ['Hi!']
@@ -271,7 +271,7 @@ with st.sidebar:
 
                         with st.spinner('🧠 Building vectorstore with knowledge...'):
                             full_text = "\n".join(full_text)
-
+                            st.session_state['god_text'] = [full_text]
                             text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
                             texts = text_splitter.create_documents([full_text])
                             # Select embeddings
@@ -315,13 +315,12 @@ with st.sidebar:
                 if st.button('🧠🛑 Disable GOD MODE'):
                     del st.session_state['god_mode']
                     del st.session_state['db']
+                    del st.session_state['god_text']
                     del st.session_state['god_mode_info']
                     del st.session_state['god_mode_source']
                     del st.session_state['plugin']
                     st.experimental_rerun()
-            with st.expander("🌍 View source"):
-                for s in st.session_state['god_mode_source']:
-                    st.markdown("- " + s)
+            
 
 # DATA PLUGIN
         if st.session_state['plugin'] == "📋 Talk with your DATA" and 'df' not in st.session_state:
@@ -380,7 +379,7 @@ with st.sidebar:
                         # Create retriever interface
                         retriever = db.as_retriever()
                         # Create QA chain
-                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever)
+                        qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever,  return_source_documents=True)
                         st.session_state['pdf'] = qa
 
                     st.experimental_rerun()
@@ -671,7 +670,6 @@ with st.sidebar:
                 del st.session_state['plugin']
                 st.experimental_rerun()
 
-
 # END OF PLUGIN
     add_vertical_space(4)
     if 'hf_email' in st.session_state:
@@ -694,40 +692,46 @@ with st.sidebar:
 # User input
 # Layout of input/response containers
 input_container = st.container()
-colored_header(label='', description='', color_name='blue-70')
 response_container = st.container()
-
+data_view_container = st.container()
 
 
 
 ## Applying the user input box
 with input_container:
-    with st.form("🧑‍💻 Input your prompt"):
-        input_text = st.text_input("🧑‍💻 YOU 👇", "", key="input")
-        submitted = st.form_submit_button("🧑‍💻 SEND")
+        input_text = st.chat_input("🧑‍💻 Write here 👇", key="input")
+
+with data_view_container:
     if 'df' in st.session_state:
-        with st.expander("🤖 View your DATA"):
+        with st.expander("🤖 View your **DATA**"):
             st.data_editor(st.session_state['df'], use_container_width=True)
     if 'pdf' in st.session_state:
-        with st.expander("🤖 View your DOCUMENT"):
+        with st.expander("🤖 View your **DOCUMENTs**"):
             st.write(st.session_state['documents'])
     if 'audio' in st.session_state:
-        with st.expander("🤖 View your AUDIO"):
+        with st.expander("🤖 View your **AUDIO**"):
             st.write(st.session_state['audio_text'])
     if 'yt' in st.session_state:
-        with st.expander("🤖 View your YT video"):
+        with st.expander("🤖 View your **YT video**"):
             st.write(st.session_state['yt_text'])
     if 'web_text' in st.session_state:
-        with st.expander("🤖 View Website content"):
+        with st.expander("🤖 View the **Website content**"):
             st.write(st.session_state['web_text'])
     if 'old_db' in st.session_state:
-        with st.expander("🗂 View your saved VectorStore"):
+        with st.expander("🗂 View your **saved VectorStore**"):
             st.success("📚 VectorStore loaded")
+    if 'god_mode_source' in st.session_state:
+        with st.expander("🌍 View source"):
+            for s in st.session_state['god_mode_source']:
+                st.markdown("- " + s)
 
 # Response output
 ## Function for taking user prompt as input followed by producing AI generated responses
 def generate_response(prompt):
     final_prompt =  ""
+    make_better = True
+    source = ""
+
     if st.session_state['plugin'] == "📋 Talk with your DATA" and 'df' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
@@ -741,54 +745,84 @@ def generate_response(prompt):
             with st.spinner('🚀 Using tool to get information...'):
                 solution = st.session_state['df'].sketch.ask(prompt, call_display=False)
                 final_prompt = prompt4Data(prompt, context, solution)
-        print(final_prompt)
+
 
     elif st.session_state['plugin'] == "📝 Talk with your DOCUMENTS" and 'pdf' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
-            solution = st.session_state['pdf'].run(prompt)
-            final_prompt = prompt4PDF(prompt, context, solution)
-        print(final_prompt)
+            result = st.session_state['pdf']({"query": prompt})
+            solution = result["result"]
+            if len(solution.split()) > 110:
+                make_better = False
+                final_prompt = solution
+                final_prompt += "\n\n✅Source:\n" 
+                for d in result["source_documents"]:
+                    final_prompt += "- " + str(d) + "\n"
+            else:
+                final_prompt = prompt4PDF(prompt, context, solution)
+                source += "\n\n✅Source:\n"
+                for d in result["source_documents"]:
+                    source += "- " + str(d) + "\n"
+
 
     elif st.session_state['plugin'] == "🧠 GOD MODE" and 'god_mode' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['god_mode'].run(prompt)
-            final_prompt = prompt4PDF(prompt, context, solution)
-        print(final_prompt)
+            if len(solution.split()) > 110:
+                make_better = False
+                final_prompt = solution
+            else:
+                final_prompt = prompt4PDF(prompt, context, solution)
+
 
     elif st.session_state['plugin'] == "🔗 Talk with Website" and 'web_sites' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['web_sites'].run(prompt)
-            final_prompt = prompt4PDF(prompt, context, solution)
-        print(final_prompt)
+            if len(solution.split()) > 110:
+                make_better = False
+                final_prompt = solution
+            else:
+                final_prompt = prompt4PDF(prompt, context, solution)
+        
 
     elif st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['old_db'].run(prompt)
-            final_prompt = prompt4PDF(prompt, context, solution)
-        print(final_prompt)
+            if len(solution.split()) > 110:
+                make_better = False
+                final_prompt = solution
+            else:
+                final_prompt = prompt4PDF(prompt, context, solution)
+
 
     elif st.session_state['plugin'] == "🎧 Talk with your AUDIO" and 'audio' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['audio'].run(prompt)
-            final_prompt = prompt4Audio(prompt, context, solution)
-        print(final_prompt)
+            if len(solution.split()) > 110:
+                make_better = False
+                final_prompt = solution
+            else:
+                final_prompt = prompt4Audio(prompt, context, solution)
+
 
     elif st.session_state['plugin'] == "🎥 Talk with YT video" and 'yt' in st.session_state:
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
             solution = st.session_state['yt'].run(prompt)
-            final_prompt = prompt4YT(prompt, context, solution)
-        print(final_prompt)
+            if len(solution.split()) > 110:
+                make_better = False
+            else:
+                final_prompt = prompt4YT(prompt, context, solution)
+  
 
     else:
         #get last message if exists
@@ -816,27 +850,44 @@ def generate_response(prompt):
         else:
             final_prompt = prompt4conversation(prompt, context)
 
+    if make_better:
+        with st.spinner('🚀 Generating response...'):
+            print(final_prompt)
+            response = st.session_state['chatbot'].chat(final_prompt, temperature=temperature, top_p=top_p, repetition_penalty=repetition_penalty, top_k=top_k, max_new_tokens=max_new_tokens)
+            response += source
+    else:
         print(final_prompt)
-    
-    with st.spinner('🚀 Generating response...'):
-        response = st.session_state['chatbot'].chat(final_prompt, temperature=temperature, top_p=top_p, repetition_penalty=repetition_penalty, top_k=top_k, max_new_tokens=max_new_tokens)
+        response = final_prompt
     return response
 
 ## Conditional display of AI generated responses as a function of user provided prompts
 with response_container:
-    if submitted and input_text and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
+    if input_text and 'hf_email' in st.session_state and 'hf_pass' in st.session_state:
         response = generate_response(input_text)
         st.session_state.past.append(input_text)
         st.session_state.generated.append(response)
     
 
-    #print message in reverse order frist message always bot
+    #print message in normal order, frist user then bot
     if 'generated' in st.session_state:
         if st.session_state['generated']:
-            for i in range(len(st.session_state['generated'])-1, -1, -1):
-                message(st.session_state["generated"][i], key=str(i+100))
-                message(st.session_state['past'][i], is_user=True, key=str(i+100) + '_user') # type: ignore
-            st.markdown('<br><hr><br>', unsafe_allow_html=True)
+            for i in range(len(st.session_state['generated'])):
+                with st.chat_message(name="user"):
+                    st.markdown(st.session_state['past'][i])
+                
+                with st.chat_message(name="assistant"):
+                    if len(st.session_state['generated'][i].split("✅Source:")) > 1:
+                        source = st.session_state['generated'][i].split("✅Source:")[1]
+                        mess = st.session_state['generated'][i].split("✅Source:")[0]
+
+                        st.markdown(mess)
+                        with st.expander("📚 Source of message number " + str(i+1)):
+                            st.markdown(source)
+
+                    else:
+                        st.markdown(st.session_state['generated'][i])
+
+            st.markdown('', unsafe_allow_html=True)
             
             
     else:
