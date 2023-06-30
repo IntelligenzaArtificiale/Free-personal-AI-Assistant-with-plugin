@@ -770,58 +770,94 @@ def generate_response(prompt):
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
-            solution = st.session_state['god_mode'].run(prompt)
+            result = st.session_state['god_mode']({"query": prompt})
+            solution = result["result"]
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
+                final_prompt += "\n\n✅Source:\n" 
+                for d in result["source_documents"]:
+                    final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
+                source += "\n\n✅Source:\n"
+                for d in result["source_documents"]:
+                    source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🔗 Talk with Website" and 'web_sites' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
-            solution = st.session_state['web_sites'].run(prompt)
+            result = st.session_state['web_sites']({"query": prompt})
+            solution = result["result"]
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
+                final_prompt += "\n\n✅Source:\n" 
+                for d in result["source_documents"]:
+                    final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
-        
+                source += "\n\n✅Source:\n"
+                for d in result["source_documents"]:
+                    source += "- " + str(d) + "\n"
+
 
     elif st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
-            solution = st.session_state['old_db'].run(prompt)
+            result = st.session_state['old_db']({"query": prompt})
+            solution = result["result"]
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
+                final_prompt += "\n\n✅Source:\n" 
+                for d in result["source_documents"]:
+                    final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4PDF(prompt, context, solution)
+                source += "\n\n✅Source:\n"
+                for d in result["source_documents"]:
+                    source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🎧 Talk with your AUDIO" and 'audio' in st.session_state:
         #get only last message
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
-            solution = st.session_state['audio'].run(prompt)
+            result = st.session_state['audio']({"query": prompt})
+            solution = result["result"]
             if len(solution.split()) > 110:
                 make_better = False
                 final_prompt = solution
+                final_prompt += "\n\n✅Source:\n" 
+                for d in result["source_documents"]:
+                    final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4Audio(prompt, context, solution)
+                source += "\n\n✅Source:\n"
+                for d in result["source_documents"]:
+                    source += "- " + str(d) + "\n"
 
 
     elif st.session_state['plugin'] == "🎥 Talk with YT video" and 'yt' in st.session_state:
         context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
         with st.spinner('🚀 Using tool to get information...'):
-            solution = st.session_state['yt'].run(prompt)
+            result = st.session_state['yt']({"query": prompt})
+            solution = result["result"]
             if len(solution.split()) > 110:
                 make_better = False
+                final_prompt = solution
+                final_prompt += "\n\n✅Source:\n" 
+                for d in result["source_documents"]:
+                    final_prompt += "- " + str(d) + "\n"
             else:
                 final_prompt = prompt4YT(prompt, context, solution)
+                source += "\n\n✅Source:\n"
+                for d in result["source_documents"]:
+                    source += "- " + str(d) + "\n"
   
 
     else:
