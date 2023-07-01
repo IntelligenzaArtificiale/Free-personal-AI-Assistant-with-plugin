@@ -14,8 +14,10 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 import sketch
 from langchain.text_splitter import CharacterTextSplitter
-from promptTemplate import prompt4conversation, prompt4Data, prompt4Code, prompt4PDF, prompt4Audio, prompt4YT
+from promptTemplate import prompt4conversation, prompt4Data, prompt4Code, prompt4Context, prompt4Audio, prompt4YT
 from promptTemplate import prompt4conversationInternet
+# FOR DEVELOPMENT NEW PLUGIN 
+# from promptTemplate import yourPLUGIN
 from exportchat import export_chat
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
@@ -32,8 +34,6 @@ from itertools import islice
 from os import path
 from pydub import AudioSegment
 import os
-
-#from hugchat_api import HuggingChat
 
 
 hf = None
@@ -69,7 +69,7 @@ st.markdown('<style>.css-w770g5{\
 
 
 
-# Sidebar contents
+# Sidebar contents for logIN, choose plugin, and export chat
 with st.sidebar:
     st.title('🤗💬 PersonalChat App')
     
@@ -90,13 +90,7 @@ with st.sidebar:
                     
                         sign = Login(st.session_state['hf_email'], st.session_state['hf_pass'])
                         cookies = sign.login()
-
                         chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
-
-                        #HUG = HuggingChat(max_thread=1)    
-                        #sign = HUG.getSign(st.session_state['hf_email'], st.session_state['hf_pass'])
-                        #cookies = sign.login(save=False)
-                        #chatbot = HUG.getBot(email=st.session_state['hf_email'], cookies=cookies)
                     except Exception as e:
                         st.error(e)
                         st.info("⚠️ Please check your credentials and try again.")
@@ -113,9 +107,6 @@ with st.sidebar:
 
                     id = st.session_state['chatbot'].new_conversation()
                     st.session_state['chatbot'].change_conversation(id)
-
-                    #id = st.session_state['chatbot'].createConversation()
-                    #st.session_state['chatbot'].switchConversation(id)
 
                     st.session_state['conversation'] = id
                     # Generate empty lists for generated and past.
@@ -145,6 +136,10 @@ with st.sidebar:
             top_k = st.slider('❄️ Top K', min_value=1, max_value=100, value=50, step=1)
             max_new_tokens = st.slider('📝 Max New Tokens', min_value=1, max_value=1024, value=1024, step=1)
     
+
+        # FOR DEVELOPMENT NEW PLUGIN YOU MUST ADD IT HERE INTO THE LIST 
+        # YOU NEED ADD THE NAME AT 144 LINE
+
         #plugins for conversation
         plugins = ["🛑 No PLUGIN","🌐 Web Search", "🔗 Talk with Website" , "📋 Talk with your DATA", "📝 Talk with your DOCUMENTS", "🎧 Talk with your AUDIO", "🎥 Talk with YT video", "🧠 GOD MODE" ,"💾 Upload saved VectorStore"]
         if 'plugin' not in st.session_state:
@@ -153,6 +148,32 @@ with st.sidebar:
             if st.session_state['plugin'] == "🛑 No PLUGIN":
                 st.session_state['plugin'] = st.selectbox('🔌 Plugins', plugins, index=plugins.index(st.session_state['plugin']))
 
+
+# FOR DEVELOPMENT NEW PLUGIN FOLLOW THIS TEMPLATE
+# PLUGIN TEMPLATE
+# if st.session_state['plugin'] == "🔌 PLUGIN NAME" and 'PLUGIN NAME' not in st.session_state:
+#     # PLUGIN SETTINGS
+#     with st.expander("🔌 PLUGIN NAME Settings", expanded=True):
+#         if 'PLUGIN NAME' not in st.session_state or st.session_state['PLUGIN NAME'] == False:
+#             # PLUGIN CODE
+#             st.session_state['PLUGIN NAME'] = True
+#         elif st.session_state['PLUGIN NAME'] == True:
+#             # PLUGIN CODE
+#             if st.button('🔌 Disable PLUGIN NAME'):
+#               st.session_state['plugin'] = "🛑 No PLUGIN"
+#               st.session_state['PLUGIN NAME'] = False
+#               del ALL SESSION STATE VARIABLES RELATED TO PLUGIN
+#               st.experimental_rerun()
+#       # PLUGIN UPLOADER
+#       if st.session_state['PLUGIN NAME'] == True:
+#           with st.expander("🔌 PLUGIN NAME Uploader", expanded=True):
+#               # PLUGIN UPLOADER CODE
+#               load file
+#               if load file and st.button('🔌 Upload PLUGIN NAME'):
+#                   qa = RetrievalQA.from_chain_type(llm=st.session_state['LLM'], chain_type='stuff', retriever=retriever, return_source_documents=True)
+#                   st.session_state['PLUGIN DB'] = qa
+#                   st.experimental_rerun()
+# 
 
 
 
@@ -201,8 +222,6 @@ with st.sidebar:
 
 # GOD MODE PLUGIN
         if st.session_state['plugin'] == "🧠 GOD MODE" and 'god_mode' not in st.session_state:
-            # the goal of this plugin is to allow the user to use the full power of the model
-            # to make this the user giv us a keyword topic and we using internet, yt videos and website biuld a vectorstore based on the topic
             with st.expander("🧠 GOD MODE Settings", expanded=True):
                 if 'god_mode' not in st.session_state or st.session_state['god_mode'] == False:
                     topic = st.text_input('🔎 Topic', "Artificial Intelligence in Finance")
@@ -663,10 +682,6 @@ with st.sidebar:
                 st.experimental_rerun()
 
                             
-
-                       
-
-
 # UPLOAD PREVIUS VECTORSTORE
         if st.session_state['plugin'] == "💾 Upload saved VectorStore" and 'old_db' not in st.session_state:
             with st.expander("💾 Upload saved VectorStore", expanded=True):
@@ -698,6 +713,7 @@ with st.sidebar:
                     del st.session_state['old_db']
                 del st.session_state['plugin']
                 st.experimental_rerun()
+
 
 # END OF PLUGIN
     add_vertical_space(4)
@@ -764,6 +780,13 @@ def generate_response(prompt):
 
     with loading_container:
 
+        # FOR DEVELOPMENT PLUGIN
+        # if st.session_state['plugin'] == "🔌 PLUGIN NAME" and 'PLUGIN DB' in st.session_state:
+        #     with st.spinner('🚀 Using PLUGIN NAME...'):
+        #         solution = st.session_state['PLUGIN DB']({"query": prompt})
+        #         final_prompt = YourCustomPrompt(prompt, context)
+        
+
         if st.session_state['plugin'] == "📋 Talk with your DATA" and 'df' in st.session_state:
             #get only last message
             context = f"User: {st.session_state['past'][-1]}\nBot: {st.session_state['generated'][-1]}\n"
@@ -793,7 +816,7 @@ def generate_response(prompt):
                         for d in result["source_documents"]:
                             final_prompt += "- " + str(d) + "\n"
                 else:
-                    final_prompt = prompt4PDF(prompt, context, solution)
+                    final_prompt = prompt4Context(prompt, context, solution)
                     if 'source_documents' in result and len(result["source_documents"]) > 0:
                         source += "\n\n✅Source:\n"
                         for d in result["source_documents"]:
@@ -814,7 +837,7 @@ def generate_response(prompt):
                         for d in result["source_documents"]:
                             final_prompt += "- " + str(d) + "\n"
                 else:
-                    final_prompt = prompt4PDF(prompt, context, solution)
+                    final_prompt = prompt4Context(prompt, context, solution)
                     if 'source_documents' in result and len(result["source_documents"]) > 0:
                         source += "\n\n✅Source:\n"
                         for d in result["source_documents"]:
@@ -835,7 +858,7 @@ def generate_response(prompt):
                         for d in result["source_documents"]:
                             final_prompt += "- " + str(d) + "\n"
                 else:
-                    final_prompt = prompt4PDF(prompt, context, solution)
+                    final_prompt = prompt4Context(prompt, context, solution)
                     if 'source_documents' in result and len(result["source_documents"]) > 0:
                         source += "\n\n✅Source:\n"
                         for d in result["source_documents"]:
@@ -857,7 +880,7 @@ def generate_response(prompt):
                         for d in result["source_documents"]:
                             final_prompt += "- " + str(d) + "\n"
                 else:
-                    final_prompt = prompt4PDF(prompt, context, solution)
+                    final_prompt = prompt4Context(prompt, context, solution)
                     if 'source_documents' in result and len(result["source_documents"]) > 0:
                         source += "\n\n✅Source:\n"
                         for d in result["source_documents"]:
