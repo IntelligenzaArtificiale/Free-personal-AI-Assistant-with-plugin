@@ -11,7 +11,12 @@ This app is an LLM-based chatbot created to give anyone🤗 the possibility to u
   <br />
 
 
-https://github.com/IntelligenzaArtificiale/Free-personal-AI-Assistant/assets/108482353/c2bc1d42-6059-4551-ac39-474d550d1d77
+
+# See the Demo 👇
+https://github.com/IntelligenzaArtificiale/Free-personal-AI-Assistant/assets/108482353/61c58cf4-d14a-43e8-b248-03190f9ac034
+
+
+
 
 
 
