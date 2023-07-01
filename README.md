@@ -22,7 +22,7 @@ https://github.com/IntelligenzaArtificiale/Free-personal-AI-Assistant/assets/108
 
 - **Try it online**
     - No installation needed
-    - [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://hugchat.streamlit.app/)
+    - [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://free-personal-ai-assistant.streamlit.app/)
     
 - **Or install Locally**
     - 💾 Download the repository
