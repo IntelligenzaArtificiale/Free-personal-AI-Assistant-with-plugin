@@ -55,4 +55,4 @@ The following disclaimer is from the GitHub repo from the authors of the [HugCha
 >
 >[HugChat](https://github.com/Soulter/hugging-chat-api) is an unofficial port to the [HuggingFace Chat](https://huggingface.co/chat/) API that is powered by the [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model.
 
-@julien-c we can't wait for your feedback 🤗
+
