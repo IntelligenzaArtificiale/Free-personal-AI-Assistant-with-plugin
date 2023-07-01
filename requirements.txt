@@ -16,3 +16,4 @@ youtube_transcript_api==0.6.1
 chromadb==0.3.26
 ffmpeg-python
 ffprobe
+huggingface_hub
