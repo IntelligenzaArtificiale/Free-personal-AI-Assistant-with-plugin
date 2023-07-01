@@ -33,6 +33,8 @@ from os import path
 from pydub import AudioSegment
 import os
 
+#from hugchat_api import HuggingChat
+
 
 hf = None
 repo_id = "sentence-transformers/all-mpnet-base-v2"
@@ -83,13 +85,18 @@ with st.sidebar:
                     st.session_state['hf_email'] = hf_email
                     st.session_state['hf_pass'] = hf_pass
                     st.session_state['hf_token'] = hf_token
-                    
+
                     try:
+                    
                         sign = Login(st.session_state['hf_email'], st.session_state['hf_pass'])
                         cookies = sign.login()
-                        sign.saveCookies()
-                        # Create ChatBot                        
+
                         chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
+
+                        #HUG = HuggingChat(max_thread=1)    
+                        #sign = HUG.getSign(st.session_state['hf_email'], st.session_state['hf_pass'])
+                        #cookies = sign.login(save=False)
+                        #chatbot = HUG.getBot(email=st.session_state['hf_email'], cookies=cookies)
                     except Exception as e:
                         st.error(e)
                         st.info("⚠️ Please check your credentials and try again.")
@@ -103,8 +110,13 @@ with st.sidebar:
                         st.experimental_rerun()
 
                     st.session_state['chatbot'] = chatbot
+
                     id = st.session_state['chatbot'].new_conversation()
                     st.session_state['chatbot'].change_conversation(id)
+
+                    #id = st.session_state['chatbot'].createConversation()
+                    #st.session_state['chatbot'].switchConversation(id)
+
                     st.session_state['conversation'] = id
                     # Generate empty lists for generated and past.
                     ## generated stores AI generated responses
@@ -113,7 +125,9 @@ with st.sidebar:
                     ## past stores User's questions
                     if 'past' not in st.session_state:
                         st.session_state['past'] = ['Hi!']
+
                     st.session_state['LLM'] =  HuggingChat(email=st.session_state['hf_email'], psw=st.session_state['hf_pass'])
+                    
                     st.experimental_rerun()
                     
 
