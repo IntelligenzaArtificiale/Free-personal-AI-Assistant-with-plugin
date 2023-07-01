@@ -54,3 +54,6 @@ The following disclaimer is from the GitHub repo from the authors of the [HugCha
 > AI is an area of active research with known problems such as biased generation and misinformation. Do not use this application for high-stakes decisions or advice. Your conversations will be shared with model authors.
 >
 >[HugChat](https://github.com/Soulter/hugging-chat-api) is an unofficial port to the [HuggingFace Chat](https://huggingface.co/chat/) API that is powered by the [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model.
+
+
+@julien_c we can't wait for your feedback 🤗
