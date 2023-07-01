@@ -3,9 +3,7 @@
 
  <br />
  
-This app is an LLM-based chatbot created to give anyone🤗 the possibility to use PLUGINS, like **internet**, **Multi pdf**, **YoutubeVideo**, **Audio**, etc.. ,
-
-**without paying anything 😮** Don't you trust it? **TRY IT🧑‍💻**
+This app is an LLM-based chatbot created to give anyone🤗 the possibility to use PLUGINS, like **internet**, **Multi pdf**, **YoutubeVideo**, **Audio**, etc.. , **without paying anything 😮** Don't you trust it? **TRY IT🧑‍💻**
 
  <br />
   <br />
