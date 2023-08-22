@@ -1,0 +1,32 @@
+# Ignore common version control directories/files
+.git
+.gitignore
+.gitattributes
+
+# Ignore Python bytecode files
+__pycache__
+
+# Ignore any build artifacts
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Ignore development and local environment files
+venv
+env
+.vscode
+.idea
+
+# Ignore Docker-related files
+Dockerfile
+.dockerignore
+
+# Ignore common system files
+Thumbs.db
+.DS_Store
+
+# Ignore text editor backup/swap files
+*~
+*.swp
