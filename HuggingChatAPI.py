@@ -200,7 +200,6 @@ class HuggingChat(LLM):
 # - HugChat library : https://github.com/Soulter/hugging-chat-api
 
 """class HuggingChat(LLM):
-    """HuggingChat LLM wrapper."""
     chatbot : Optional[hugchat.ChatBot] = None
     conversation : Optional[str] = ""
     email : Optional[str]
@@ -239,7 +238,6 @@ class HuggingChat(LLM):
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
-        """Get the identifying parameters."""
         return {"model": "HuggingCHAT"}"""
 
 
