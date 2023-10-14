@@ -1,7 +1,7 @@
 beautifulsoup4==4.12.2
 docx2txt==0.8
 duckduckgo_search==3.8.3
-hugchat==0.0.8
+hugchat==0.3.4
 langchain==0.0.219
 pandas==2.0.1
 pdfplumber==0.9.0
