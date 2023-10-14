@@ -124,7 +124,7 @@ class HuggingChat(LLM):
             if self.log : print(f"[LOG] LLM WRAPPER avg response time: {round(self.avg_response_time)} seconds")
             if self.log : print(f"[LOG] LLM WRAPPER response: {resp}\n\n")
 
-            return resp
+            return str(resp)
             
         except Exception as e:
             raise ValueError("ChatBot failed, please check your parameters. " + str(e))
