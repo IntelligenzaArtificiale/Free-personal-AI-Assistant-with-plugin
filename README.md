@@ -1,5 +1,5 @@
 
-# 🤗💬 HugChat but with STEROIDs 🚀
+# 🤗💬 ChatGPT but with STEROIDs and free🚀
 
  <br />
  
