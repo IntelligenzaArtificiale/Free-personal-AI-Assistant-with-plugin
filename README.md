@@ -188,7 +188,7 @@ https://github.com/IntelligenzaArtificiale/Free-personal-AI-Assistant/assets/108
     
 - **Or install Locally**
     - 💾 Download the repository
-    - 🔗 Exctract it
+    - 🔗 Extract it
     - 🛑 Install the `requirements.txt`
     - ✅ Run `streamlit run streamlit_app.py`
     - 🚀 Enjoy it  
